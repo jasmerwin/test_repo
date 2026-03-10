@@ -1,0 +1,31 @@
+import base64
+
+def _keystream(key: str, length: int):
+    if not (isinstance(key, str) and len(key) == 4 and key.isdigit()):
+        raise ValueError("Key must be a 4-digit string, like '4821'")
+
+    seed = int(key)
+    stream = []
+
+    # Lightweight pseudo-random stream from 4-digit key
+    for i in range(length):
+        seed = (seed * 1103 + 97 + int(key[i % 4])) % 256
+        stream.append(seed)
+
+    return stream
+
+def scramble(text: str, key: str, encode: bool = True) -> str:
+    """
+    encode=True  -> scrambles plain text into base64 text
+    encode=False -> descrambles base64 text back into plain text
+    """
+    if encode:
+        data = text.encode("utf-8")
+        ks = _keystream(key, len(data))
+        scrambled = bytes([b ^ ks[i] for i, b in enumerate(data)])
+        return base64.urlsafe_b64encode(scrambled).decode("ascii")
+    else:
+        data = base64.urlsafe_b64decode(text.encode("ascii"))
+        ks = _keystream(key, len(data))
+        plain = bytes([b ^ ks[i] for i, b in enumerate(data)])
+        return plain.decode("utf-8")
